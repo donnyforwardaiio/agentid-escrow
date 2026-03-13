@@ -84,6 +84,35 @@ def keypair():
     return private_key, public_key_hex
 
 
+def _make_keypair_dict() -> dict:
+    """Generate an Ed25519 keypair and return as a dict."""
+    private_key = Ed25519PrivateKey.generate()
+    public_key_hex = (
+        private_key.public_key()
+        .public_bytes(Encoding.Raw, PublicFormat.Raw)
+        .hex()
+    )
+    return {"public_key": public_key_hex, "private_key_bytes": private_key}
+
+
+@pytest.fixture()
+def ed25519_keypair():
+    """Return a dict with public_key (hex) and private_key_bytes."""
+    return _make_keypair_dict()
+
+
+@pytest.fixture()
+def second_keypair():
+    """Return a second distinct keypair dict."""
+    return _make_keypair_dict()
+
+
+def sign_body(body: dict, private_key: Ed25519PrivateKey) -> str:
+    """Serialize body to JSON bytes and return hex signature."""
+    body_bytes = json.dumps(body, sort_keys=True).encode()
+    return private_key.sign(body_bytes).hex()
+
+
 def make_signature(private_key: Ed25519PrivateKey, body: dict) -> tuple[bytes, str]:
     """Serialize body to JSON bytes and return (body_bytes, hex_signature)."""
     body_bytes = json.dumps(body).encode()

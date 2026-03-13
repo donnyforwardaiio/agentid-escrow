@@ -14,9 +14,9 @@ async def lifespan(app: FastAPI):
         from app.db import engine
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        print("✅ Database connection OK")
+        print("[OK] Database connection OK")
     except Exception as e:
-        print(f"⚠️  Database connection failed: {e}")
+        print(f"[WARN] Database connection failed: {e}")
     yield
     # Shutdown
     print("Shutting down...")
@@ -38,7 +38,11 @@ app.add_middleware(
 )
 
 from app.routes import agents as agents_router
+from app.routes.escrow import router as escrow_router, stripe_router
+
 app.include_router(agents_router.router)
+app.include_router(escrow_router)
+app.include_router(stripe_router)
 
 
 @app.get("/health", tags=["health"])
