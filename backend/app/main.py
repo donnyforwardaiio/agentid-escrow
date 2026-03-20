@@ -39,10 +39,12 @@ app.add_middleware(
 
 from app.routes import agents as agents_router
 from app.routes.escrow import router as escrow_router, stripe_router
+from app.routes import newsletter as newsletter_router
 
 app.include_router(agents_router.router)
 app.include_router(escrow_router)
 app.include_router(stripe_router)
+app.include_router(newsletter_router.router)
 
 
 @app.get("/health", tags=["health"])
