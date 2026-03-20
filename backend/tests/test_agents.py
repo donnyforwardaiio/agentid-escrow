@@ -315,3 +315,138 @@ def test_score_floor_is_zero(client, keypair):
 
     final = r.json()["overall_score"]
     assert final == 0.0
+
+
+# ===========================================================================
+# agent_role — registration and filtering
+# ===========================================================================
+
+def _make_agent(client, keypair, name, role="provider", capabilities=None):
+    private_key, public_key_hex = keypair
+    payload = {
+        "name": name,
+        "owner_email": f"{name.lower()}@example.com",
+        "capabilities": capabilities or [],
+        "agent_role": role,
+        "public_key": public_key_hex,
+    }
+    r = client.post("/v1/agents", json=payload)
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_register_agent_defaults_to_provider(client, keypair):
+    _, public_key_hex = keypair
+    payload = {
+        "name": "DefaultRole",
+        "owner_email": "default@example.com",
+        "capabilities": [],
+        "public_key": public_key_hex,
+    }
+    r = client.post("/v1/agents", json=payload)
+    assert r.status_code == 201
+    assert r.json()["agent_role"] == "provider"
+
+
+def test_register_agent_as_consumer(client, keypair):
+    _, public_key_hex = keypair
+    payload = {
+        "name": "ConsumerAgent",
+        "owner_email": "consumer@example.com",
+        "capabilities": [],
+        "agent_role": "consumer",
+        "public_key": public_key_hex,
+    }
+    r = client.post("/v1/agents", json=payload)
+    assert r.status_code == 201
+    assert r.json()["agent_role"] == "consumer"
+
+
+def test_list_agents_filter_by_role(client, keypair, second_keypair):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
+    def fresh_key():
+        pk = Ed25519PrivateKey.generate()
+        return pk, pk.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
+
+    kp1 = fresh_key()
+    kp2 = fresh_key()
+
+    _make_agent(client, kp1, "ProviderOne", role="provider")
+    _make_agent(client, kp2, "ConsumerOne", role="consumer")
+
+    r_provider = client.get("/v1/agents?role=provider")
+    assert r_provider.status_code == 200
+    roles = [a["agent_role"] for a in r_provider.json()["items"]]
+    assert all(r == "provider" for r in roles)
+
+    r_consumer = client.get("/v1/agents?role=consumer")
+    assert r_consumer.status_code == 200
+    roles = [a["agent_role"] for a in r_consumer.json()["items"]]
+    assert all(r == "consumer" for r in roles)
+
+
+# ===========================================================================
+# GET /v1/agents/discover
+# ===========================================================================
+
+def test_discover_returns_only_providers(client, keypair, second_keypair):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
+    def fresh_key():
+        pk = Ed25519PrivateKey.generate()
+        return pk, pk.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
+
+    _make_agent(client, fresh_key(), "DiscoverProvider", role="provider", capabilities=["code"])
+    _make_agent(client, fresh_key(), "DiscoverConsumer", role="consumer")
+
+    r = client.get("/v1/agents/discover")
+    assert r.status_code == 200
+    body = r.json()
+    roles = [a["agent_role"] for a in body["items"]]
+    assert all(r == "provider" for r in roles), f"Non-provider in results: {roles}"
+
+
+def test_discover_filter_by_capability(client):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
+    def fresh_key():
+        pk = Ed25519PrivateKey.generate()
+        return pk, pk.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
+
+    _make_agent(client, fresh_key(), "CodeProvider", role="provider", capabilities=["code"])
+    _make_agent(client, fresh_key(), "WritingProvider", role="provider", capabilities=["writing"])
+
+    r = client.get("/v1/agents/discover?capability=code")
+    assert r.status_code == 200
+    for agent in r.json()["items"]:
+        assert "code" in agent["capabilities"]
+
+
+def test_discover_filter_min_score(client):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
+    def fresh_key():
+        pk = Ed25519PrivateKey.generate()
+        return pk, pk.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
+
+    _make_agent(client, fresh_key(), "HighScoreProvider", role="provider")
+
+    r = client.get("/v1/agents/discover?min_score=50")
+    assert r.status_code == 200
+    for agent in r.json()["items"]:
+        assert agent["reputation"]["overall_score"] >= 50
+
+
+def test_discover_returns_paginated_response(client):
+    r = client.get("/v1/agents/discover?limit=5&offset=0")
+    assert r.status_code == 200
+    body = r.json()
+    assert "items" in body
+    assert "total" in body
+    assert "limit" in body
+    assert body["limit"] == 5
