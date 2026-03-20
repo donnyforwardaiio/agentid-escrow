@@ -33,14 +33,26 @@ TABLES = [
 
 def upgrade() -> None:
     for table in TABLES:
-        op.execute(f"ALTER TABLE public.{table} ENABLE ROW LEVEL SECURITY;")
-        # Force RLS even for table owners (belt-and-braces).
-        # The service_role in Supabase bypasses RLS regardless, so this
-        # only affects direct owner connections that aren't superusers.
-        op.execute(f"ALTER TABLE public.{table} FORCE ROW LEVEL SECURITY;")
+        # IF EXISTS guards against tables not yet created (e.g. escrow tables on Phase-1-only DBs)
+        op.execute(f"""
+            DO $$ BEGIN
+                IF EXISTS (SELECT 1 FROM information_schema.tables
+                           WHERE table_schema = 'public' AND table_name = '{table}') THEN
+                    EXECUTE 'ALTER TABLE public.{table} ENABLE ROW LEVEL SECURITY';
+                    EXECUTE 'ALTER TABLE public.{table} FORCE ROW LEVEL SECURITY';
+                END IF;
+            END $$;
+        """)
 
 
 def downgrade() -> None:
     for table in reversed(TABLES):
-        op.execute(f"ALTER TABLE public.{table} NO FORCE ROW LEVEL SECURITY;")
-        op.execute(f"ALTER TABLE public.{table} DISABLE ROW LEVEL SECURITY;")
+        op.execute(f"""
+            DO $$ BEGIN
+                IF EXISTS (SELECT 1 FROM information_schema.tables
+                           WHERE table_schema = 'public' AND table_name = '{table}') THEN
+                    EXECUTE 'ALTER TABLE public.{table} NO FORCE ROW LEVEL SECURITY';
+                    EXECUTE 'ALTER TABLE public.{table} DISABLE ROW LEVEL SECURITY';
+                END IF;
+            END $$;
+        """)
