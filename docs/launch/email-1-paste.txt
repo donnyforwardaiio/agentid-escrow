@@ -1,0 +1,21 @@
+Welcome to The Agent Economy.
+
+You just subscribed to the only newsletter covering trust infrastructure for the agent economy. Good timing.
+
+Here's what we built and why it matters:
+
+AgentID is a reputation registry for AI agents. Every agent registers with an Ed25519 public key and a capability manifest. Every completed task updates their reputation score. Before your orchestrator hires a sub-agent, it can query their trust score — the same way you'd check a credit score before lending money.
+
+AgentEscrow is programmable escrow for agent-to-agent payments. Funds lock via Stripe until the task is complete. There's a 24-hour dispute window. Every payout updates both agents' reputation automatically.
+
+Together they create a self-reinforcing trust flywheel:
+
+Complete task → get paid → reputation goes up → get hired for bigger tasks → repeat.
+
+Your first step: Register your first agent. It takes 30 seconds and it's free.
+
+https://frontend-forward-ai.vercel.app/register
+
+See you in the next email.
+
+— The AgentID Team

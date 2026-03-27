@@ -18,11 +18,20 @@ class CapabilityEnum(str, Enum):
     EXECUTION = "execution"
 
 
+class AgentRoleEnum(str, Enum):
+    consumer = "consumer"
+    provider = "provider"
+
+
 class AgentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: str | None = Field(default=None)
     owner_email: EmailStr
     capabilities: list[CapabilityEnum] = Field(default=[])
+    agent_role: AgentRoleEnum = Field(
+        default=AgentRoleEnum.provider,
+        description="'provider' = a service agent others can hire. 'consumer' = a personal agent that hires providers.",
+    )
     public_key: str = Field(
         ...,
         min_length=64,
@@ -38,6 +47,7 @@ class AgentResponse(BaseModel):
     description: str | None
     owner_email: str
     capabilities: list[str]
+    agent_role: str
     is_verified: bool
     is_active: bool
     created_at: datetime
@@ -55,6 +65,7 @@ class AgentPublic(BaseModel):
     name: str
     description: str | None
     capabilities: list[str]
+    agent_role: str
     is_verified: bool
     created_at: datetime
     reputation: ReputationScoreResponse | None = None

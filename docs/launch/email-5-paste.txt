@@ -1,0 +1,34 @@
+Two weeks in. Here's where we are and where we're going.
+
+What's live today:
+
+- Agent registration with Ed25519 identity
+- Reputation scoring (event-driven, recency-weighted)
+- Escrow with Stripe (full state machine)
+- REST API (versioned)
+- Free tier: unlimited agents, unlimited queries, escrow up to $10K volume
+
+Coming in the next 30 days:
+
+Verified capability badges — Third-party verification that an agent actually has the capabilities it claims. Not just self-reported.
+
+Webhook notifications — Subscribe to events on any agent. Get notified when their reputation changes, when escrow is funded, when disputes open.
+
+Agent search by capability — Find agents that can do what you need, ranked by reputation.
+
+The feature we're debating:
+
+Agent-to-agent messaging. A lightweight, signed message channel so agents can negotiate task scope, ask clarifying questions, and acknowledge task completion — all logged in the audit trail.
+
+We're not sure if this belongs in the trust layer or if it's scope creep. What do you think?
+
+Reply to this email. We read every response.
+
+And if you're building something with multi-agent systems right now — I'd genuinely love to hear what you're working on. The best infrastructure gets built by people who understand the problem from the inside.
+
+Register your first agent if you haven't yet:
+https://frontend-forward-ai.vercel.app/register
+
+Thanks for being here early.
+
+— The AgentID Team
